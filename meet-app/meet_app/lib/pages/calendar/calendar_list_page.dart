@@ -105,7 +105,18 @@ class _CalendarListPageState extends State<CalendarListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: beymenAppbar('Takvimler', () => _createCalendarDialog()),
+      // backgroundColor: Colors.white.withOpacity(0.5),
+      appBar: AppBar(
+        // automaticallyImplyLeading: showBackButton,
+        backgroundColor: mainColor,
+        centerTitle: true,
+        elevation: 4.0,
+        title: const Text(
+          'Odalar',
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
       body: _isLoading
           ? Center(
               child: CircularProgressIndicator(
@@ -117,57 +128,157 @@ class _CalendarListPageState extends State<CalendarListPage> {
   }
 
   Widget _buildBody() {
-    return _calendarList != null && _calendarList!.isNotEmpty
-        ? ListView.builder(
-            physics: const AlwaysScrollableScrollPhysics(),
-            // controller: _scrollController,
-            itemCount: _calendarList?.length,
-            itemBuilder: (context, index) {
-              final calendar = _calendarList![index];
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => EventListPage(
-                                calendarId: calendar.id!,
-                              )));
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.only(bottom: 10),
-                      color: mainColor,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Flexible(
-                            child: Container(
-                                padding:
-                                    const EdgeInsets.only(top: 20, left: 20),
-                                child: Text(
-                                  calendar.name ?? "",
-                                  style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white),
-                                  overflow: TextOverflow.clip,
-                                )),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(
-                      height: 0.5,
-                    )
-                  ],
-                ),
-              );
+    return Container(
+      margin: const EdgeInsets.only(
+        left: 20,
+        right: 20,
+      ),
+      child: Column(
+        children: [
+          const SizedBox(
+            height: 10,
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EventListPage(
+                            roomMail: room601,
+                            roomName: 'Toplantı Odası 601',
+                          )));
             },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                      color: mainColor,
+                      borderRadius: BorderRadius.circular(2015)),
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Flexible(
+                        child: Container(
+                            padding: const EdgeInsets.only(top: 15, left: 20),
+                            child: const Text(
+                              'Toplantı Odası  601',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                              overflow: TextOverflow.clip,
+                            )),
+                      ),
+                    ],
+                  ),
+                ),
+                // const Divider(
+                //   height: 0.5,
+                // )
+              ],
+            ),
+          ),
+          const SizedBox(
+            height: 10,
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => EventListPage(
+                            roomMail: room604,
+                            roomName: '604',
+                          )));
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                      color: mainColor,
+                      borderRadius: BorderRadius.circular(2015)),
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      Flexible(
+                        child: Container(
+                            padding: const EdgeInsets.only(top: 15, left: 20),
+                            child: const Text(
+                              'Toplantı Odası  604',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
+                              overflow: TextOverflow.clip,
+                            )),
+                      ),
+                    ],
+                  ),
+                ),
+                // const Divider(
+                //   height: 0.5,
+                // )
+              ],
+            ),
           )
-        : const Center(
-            child: Text("Calendars could not be found"),
-          );
+        ],
+      ),
+    );
+    // _calendarList != null && _calendarList!.isNotEmpty
+    //     ? ListView.builder(
+    //         physics: const AlwaysScrollableScrollPhysics(),
+    //         // controller: _scrollController,
+    //         itemCount: _calendarList?.length,
+    //         itemBuilder: (context, index) {
+    //           final calendar = _calendarList![index];
+    //           return GestureDetector(
+    //             onTap: () {
+    //               Navigator.push(
+    //                   context,
+    //                   MaterialPageRoute(
+    //                       builder: (context) => EventListPage(
+    //                             calendarId: calendar.id!,
+    //                           )));
+    //             },
+    //             child: Column(
+    //               crossAxisAlignment: CrossAxisAlignment.start,
+    //               children: [
+    //                 Container(
+    //                   padding: const EdgeInsets.only(bottom: 10),
+    //                   color: mainColor,
+    //                   child: Row(
+    //                     mainAxisAlignment: MainAxisAlignment.spaceAround,
+    //                     children: [
+    //                       Flexible(
+    //                         child: Container(
+    //                             padding:
+    //                                 const EdgeInsets.only(top: 20, left: 20),
+    //                             child: Text(
+    //                               calendar.name ?? "",
+    //                               style: const TextStyle(
+    //                                   fontSize: 16,
+    //                                   fontWeight: FontWeight.bold,
+    //                                   color: Colors.white),
+    //                               overflow: TextOverflow.clip,
+    //                             )),
+    //                       ),
+    //                     ],
+    //                   ),
+    //                 ),
+    //                 const Divider(
+    //                   height: 0.5,
+    //                 )
+    //               ],
+    //             ),
+    //           );
+    //         },
+    //       )
+    //     : const Center(
+    //         child: Text("Calendars could not be found"),
+    //       );
   }
 }
