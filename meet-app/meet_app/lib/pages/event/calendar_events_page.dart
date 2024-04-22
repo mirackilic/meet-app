@@ -1,22 +1,27 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:meet_app/constans.dart';
 import 'package:meet_app/helpers/utils.dart';
+import 'package:meet_app/models/request/get_meetings_by_roomid_request.dart';
 import 'package:meet_app/models/request/get_schedule_by_room_request.dart';
-import 'package:meet_app/models/response/get_events_response.dart';
-import 'package:meet_app/models/response/get_schedule_byroom_response.dart';
-import 'package:meet_app/pages/event/add_event_page.dart';
+import 'package:meet_app/models/response/get_meeting_rooms_response.dart';
+// import 'package:meet_app/models/response/get_events_response.dart';
+import 'package:meet_app/models/response/get_meetings_by_room.dart';
+import 'package:meet_app/pages/event/event_list_page.dart';
 import 'package:meet_app/services/event_service.dart';
-import 'package:meet_app/widgets/app_bar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 class CalendarEventsPage extends StatefulWidget {
-  final String roomMail;
-  final String roomName;
-  const CalendarEventsPage(
-      {super.key, required this.roomMail, required this.roomName});
+  // final String roomId;
+  // final String roomName;
+  const CalendarEventsPage({
+    super.key,
+  });
 
   @override
   State<CalendarEventsPage> createState() => _CalendarEventsPageState();
@@ -24,10 +29,10 @@ class CalendarEventsPage extends StatefulWidget {
 
 class _CalendarEventsPageState extends State<CalendarEventsPage> {
   bool _isLoading = false;
-  ValueNotifier<List<ScheduleItem>>? _selectedEvents;
+  ValueNotifier<List<Meeting>>? _selectedEvents;
   // Map<DateTime, List<Event>>? _allEvents = {};
-  List<Event>? _weeklyEvents;
-  List<Meetings>? _meetings;
+  // List<Event>? _weeklyEvents;
+  List<Meeting>? _meetings;
 
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -36,6 +41,7 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
   final CalendarFormat _calendarFormat = CalendarFormat.month;
   RangeSelectionMode _rangeSelectionMode = RangeSelectionMode
       .toggledOff; // Can be toggled on/off by longpressing a date
+  MeetingRooms? meetingRoom;
 
   @override
   void initState() {
@@ -52,9 +58,9 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
     setState(() {});
   }
 
-  List<ScheduleItem> _getEventsForDay(DateTime day) {
+  List<Meeting> _getEventsForDay(DateTime day) {
     if (_meetings == null || _meetings!.isEmpty) return [];
-    return _meetings!.first.scheduleItems!
+    return _meetings!
         .where((element) =>
             element.start!.dateTime!.month == day.month &&
             element.start!.dateTime!.day == day.day)
@@ -62,9 +68,18 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
   }
 
   _getAllEvents(DateTime day) async {
+    final prefs = await SharedPreferences.getInstance();
+    var selectedRoom = prefs.getString("selectedRoom");
+
+    Map<String, dynamic> meetingRoomMap = jsonDecode(selectedRoom!);
+    meetingRoom = MeetingRooms.fromJson(meetingRoomMap);
     // Bugünden 7 gün önce ve sonrasını hesapla
-    DateTime sevenDaysAgo = _selectedDay!.subtract(const Duration(days: 7));
-    DateTime sevenDaysAfter = _selectedDay!.add(const Duration(days: 7));
+    var givenStartDate = _selectedDay!.subtract(const Duration(days: 7));
+    var givenEndDate = _selectedDay!.add(const Duration(days: 7));
+    DateTime sevenDaysAgo = DateTime(
+        givenStartDate.year, givenStartDate.month, givenStartDate.day, 0, 1, 0);
+    DateTime sevenDaysAfter = DateTime(
+        givenEndDate.year, givenEndDate.month, givenEndDate.day, 23, 59, 59);
     // DateTime firstDate = DateTime(
     //     _selectedDay!.year, _selectedDay!.month, _selectedDay!.day, 0, 0, 0);
 
@@ -80,15 +95,10 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
       });
       // _weeklyEvents = await EventService().getByCalendarId(
       //     widget.calendarId, formattedSevenDaysAgo, formattedSevenDaysAfter);
-      _meetings =
-          await EventService().getScheduleByRoom(GetScheduleByRoomRequest(
-        schedules: [widget.roomMail],
-        availabilityViewInterval: 30,
-        startTime: Time(
-            dateTime: formattedSevenDaysAgo, timeZone: "UTC"),
-        endTime: Time(
-            dateTime: formattedSevenDaysAfter,
-            timeZone: "UTC"),
+      _meetings = await EventService().getMeetings(GetMeetingsByRoomIdRequest(
+        roomId: meetingRoom!.graphId!,
+        startTime: Time(dateTime: formattedSevenDaysAgo, timeZone: "UTC"),
+        endTime: Time(dateTime: formattedSevenDaysAfter, timeZone: "UTC"),
       ));
       setState(() {});
     } catch (e) {
@@ -128,11 +138,15 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
     return Scaffold(
       // backgroundColor: Colors.blueGrey,
       appBar: AppBar(
+        leading: BackButton(onPressed: () {
+          Navigator.push(context,
+              MaterialPageRoute(builder: (context) => EventListPage()));
+        }),
         // automaticallyImplyLeading: showBackButton,
         backgroundColor: const Color.fromARGB(255, 36, 44, 60),
         elevation: 4.0,
         title: Text(
-          widget.roomName,
+          meetingRoom == null ? "" : meetingRoom!.name!,
           style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -298,7 +312,7 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
         Container(
           color: mainColor,
           width: MediaQuery.of(context).size.width * 0.6,
-          child: TableCalendar<ScheduleItem>(
+          child: TableCalendar<Meeting>(
             // rowHeight: 40,
             locale: "tr_TR",
             daysOfWeekStyle: const DaysOfWeekStyle(
@@ -346,115 +360,118 @@ class _CalendarEventsPageState extends State<CalendarEventsPage> {
         // const SizedBox(height: 15),
         _selectedEvents == null
             ? Container()
-            : Container(
-                height: MediaQuery.of(context).size.height,
-                width: MediaQuery.of(context).size.width * 0.4,
-                child: ValueListenableBuilder<List<ScheduleItem>>(
-                  valueListenable: _selectedEvents!,
-                  builder: (context, value, _) {
-                    return ListView.builder(
-                      itemCount: value.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          contentPadding: EdgeInsets.all(0),
-                          minVerticalPadding: 0,
-                          // contentPadding: const EdgeInsets.all(5),
-                          // onTap: () async =>
-                          //     value[index].onlineMeeting == null
-                          //         ? null
-                          //         : await _launchInBrowser(
-                          //             value[index].onlineMeeting!.joinUrl!),
-                          // leading: CircleAvatar(
-                          //   radius: 20,
-                          //   backgroundColor: beymenGold,
-                          //   child: Icon(
-                          //     Icons.calendar_month_rounded,
-                          //     color: mainColor,
-                          //     size: 30,
-                          //   ),
-                          // ),
-                          title: Container(
-                            width: MediaQuery.of(context).size.width * 0.4,
-                            height: 30,
-                            color: Colors.grey.withOpacity(0.5),
-                            child: Padding(
-                              padding: const EdgeInsets.only(top: 2, left: 15),
-                              child: Text(
-                                formatDateForImage(_selectedDay!),
-                                // textAlign: TextAlign.justify,
-                                // formatDateForCreateMeet(_selectedDay!),
-                                style: TextStyle(
-                                  color: mainColor,
-                                ),
-                              ),
-                            ),
-                          ),
-                          subtitle: Column(
-                            children: [
-                              const SizedBox(
-                                height: 10,
-                              ),
-                              Container(
-                                margin: const EdgeInsets.only(left: 15),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                        "${formatDateForScheduleList(value[index].start!.dateTime!)} ",
-                                        style: const TextStyle(
+            : Column(
+                children: [
+                  Container(
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    height: 30,
+                    color: Colors.grey.withOpacity(0.5),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 2, left: 15),
+                      child: Text(
+                        formatDateForImage(_selectedDay!),
+                        // textAlign: TextAlign.justify,
+                        // formatDateForCreateMeet(_selectedDay!),
+                        style: TextStyle(
+                          color: mainColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: MediaQuery.of(context).size.height * 0.8,
+                    width: MediaQuery.of(context).size.width * 0.4,
+                    child: ValueListenableBuilder<List<Meeting>>(
+                      valueListenable: _selectedEvents!,
+                      builder: (context, value, _) {
+                        return ListView.builder(
+                          itemCount: value.length,
+                          itemBuilder: (context, index) {
+                            return ListTile(
+                              contentPadding: EdgeInsets.all(0),
+                              minVerticalPadding: 0,
+                              // contentPadding: const EdgeInsets.all(5),
+                              // onTap: () async =>
+                              //     value[index].onlineMeeting == null
+                              //         ? null
+                              //         : await _launchInBrowser(
+                              //             value[index].onlineMeeting!.joinUrl!),
+                              // leading: CircleAvatar(
+                              //   radius: 20,
+                              //   backgroundColor: beymenGold,
+                              //   child: Icon(
+                              //     Icons.calendar_month_rounded,
+                              //     color: mainColor,
+                              //     size: 30,
+                              //   ),
+                              // ),
+                              subtitle: Column(
+                                children: [
+                                  const SizedBox(
+                                    height: 10,
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 15),
+                                    child: Row(
+                                      children: [
+                                        Text(
+                                            "${formatDateForScheduleList(value[index].start!.dateTime!)} ",
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                            )),
+                                        const Icon(
+                                          Icons.arrow_forward_rounded,
                                           color: Colors.black,
-                                        )),
-                                    const Icon(
-                                      Icons.arrow_forward_rounded,
-                                      color: Colors.black,
-                                      size: 16,
+                                          size: 16,
+                                        ),
+                                        Text(
+                                            " ${formatDateForScheduleList(value[index].end!.dateTime!)}",
+                                            style: const TextStyle(
+                                                color: Colors.black)),
+                                      ],
                                     ),
-                                    Text(
-                                        " ${formatDateForScheduleList(value[index].end!.dateTime!)}",
-                                        style: const TextStyle(
-                                            color: Colors.black)),
-                                  ],
-                                ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 16),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.start,
+                                      children: [
+                                        // const Icon(
+                                        //   Icons.arrow_right_sharp,
+                                        //   color: Colors.pinkAccent,
+                                        //   size: 30,
+                                        // ),
+                                        Text("${value[index].subject} ",
+                                            style: const TextStyle(
+                                                color: Colors.black,
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 16),
+                                    child: Row(
+                                      children: [
+                                        Text("${value[index].organizer!.emailAddress!.name} ",
+                                            style: const TextStyle(
+                                                color: Color.fromARGB(
+                                                    255, 116, 115, 115),
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                  const Divider()
+                                ],
                               ),
-                              Container(
-                                margin: const EdgeInsets.only(left: 16),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  children: [
-                                    // const Icon(
-                                    //   Icons.arrow_right_sharp,
-                                    //   color: Colors.pinkAccent,
-                                    //   size: 30,
-                                    // ),
-                                    Text("${value[index].location} ",
-                                        style: const TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                              Container(
-                                margin: const EdgeInsets.only(left: 16),
-                                child: Row(
-                                  children: [
-                                    Text("${value[index].subject} ",
-                                        style: const TextStyle(
-                                            color: Color.fromARGB(
-                                                255, 116, 115, 115),
-                                            fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(
-                                height: 10,
-                              )
-                            ],
-                          ),
+                            );
+                          },
                         );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                ],
               ),
       ],
     );

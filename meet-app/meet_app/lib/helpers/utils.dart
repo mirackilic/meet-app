@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:meet_app/models/response/get_schedule_byroom_response.dart';
+import 'package:meet_app/models/response/get_meetings_by_room.dart';
 
 String formatDate(DateTime date) {
-  date = date.add(const Duration(hours: 3));
   var formatter = DateFormat('d MMMM HH:mm', 'tr');
   return formatter.format(date);
 }
 
 String formatDateForScheduleList(DateTime date) {
   date = date.add(const Duration(hours: 3));
+  var formatter = DateFormat('HH:mm', 'tr');
+  return formatter.format(date);
+}
+
+String formatMainHour(DateTime date) {
   var formatter = DateFormat('HH:mm', 'tr');
   return formatter.format(date);
 }
@@ -108,14 +112,14 @@ String? findFirstFreeTime(String data) {
 }
 
 // Şu anki zaman aralığında olan toplantıyı bulan metot
-ScheduleItem? findCurrentMeeting(ValueNotifier<List<ScheduleItem>> meetings) {
+Meeting? findCurrentMeeting(ValueNotifier<List<Meeting>> meetings) {
   DateTime now = DateTime.now();
 
-  for (ScheduleItem meeting in meetings.value) {
-    DateTime start = DateTime.parse(meeting.start!.dateTime!.toString())
-        .add(const Duration(hours: 3)); // UTC saatini yerel saate çevir
-    DateTime end = DateTime.parse(meeting.end!.dateTime!.toString())
-        .add(const Duration(hours: 3)); // UTC saatini yerel saate çevir
+  for (Meeting meeting in meetings.value) {
+    DateTime start = DateTime.parse(
+        meeting.start!.dateTime!.toString()); // UTC saatini yerel saate çevir
+    DateTime end = DateTime.parse(
+        meeting.end!.dateTime!.toString()); // UTC saatini yerel saate çevir
 
     if (now.isAfter(start) && now.isBefore(end)) {
       return meeting;
@@ -124,12 +128,12 @@ ScheduleItem? findCurrentMeeting(ValueNotifier<List<ScheduleItem>> meetings) {
   return null;
 }
 
-ScheduleItem? findNextMeeting(ValueNotifier<List<ScheduleItem>> scheduleItems) {
+Meeting? findNextMeeting(ValueNotifier<List<Meeting>> scheduleItems) {
   DateTime now = DateTime.now();
 
-  for (ScheduleItem item in scheduleItems.value) {
-    DateTime start = DateTime.parse(item.start!.dateTime!.toString())
-        .add(const Duration(hours: 3)); // UTC saatini yerel saate çevir
+  for (Meeting item in scheduleItems.value) {
+    DateTime start = DateTime.parse(
+        item.start!.dateTime!.toString()); // UTC saatini yerel saate çevir
     // Toplantı başlangıç zamanı şu andan sonra olan ilk toplantıyı bul
     if (start!.isAfter(now)) {
       return item;
