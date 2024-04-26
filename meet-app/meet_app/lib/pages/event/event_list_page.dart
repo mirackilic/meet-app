@@ -284,7 +284,7 @@ class _EventListPageState extends State<EventListPage> {
   }
 
   void checkNewMeetings() {
-    _newMeetingsTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    _newMeetingsTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _timer?.cancel();
       _timeString = formatMainHour(DateTime.now());
 
