@@ -23,9 +23,9 @@ class AppRoute {
   }
 
   static String getInitialRoute(SharedPreferences prefs) {
-    final token = prefs.getString('selectedRoom');
+    final room = prefs.getString('selectedRoom');
 
-    if (token == null || token == "") {
+    if (room == null || room == "") {
       return '/login';
     } else {
       return "/";
