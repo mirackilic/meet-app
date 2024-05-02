@@ -33,6 +33,7 @@ class _EventListPageState extends State<EventListPage> {
   ValueNotifier<String> timerText = ValueNotifier<String>('00:00:00');
   Timer? _timer;
   Timer? _newMeetingsTimer;
+  Timer? _attendeesTimer;
   MeetingRooms? meetingRoom;
   bool _isLoading = false;
   ValueNotifier<List<Meeting>>? _selectedEvents;
@@ -162,6 +163,11 @@ class _EventListPageState extends State<EventListPage> {
           final duration =
               _nextMeeting!.start!.dateTime!.difference(DateTime.now());
 
+          if (duration.inSeconds <= 15 * 60 && _nextMeeting != null) //15dk
+          {
+            _nextMeeting!.isWaiting = true;
+          }
+
           if (_meetings!.indexOf(_nextMeeting!) > 1)
             _meetings!.removeRange(0, _meetings!.indexOf(_nextMeeting!) - 1);
 
@@ -228,29 +234,6 @@ class _EventListPageState extends State<EventListPage> {
     // }
   }
 
-  // Future<void> _onDaySelected(DateTime selectedDay, DateTime focusedDay) async {
-  //   if (!isSameDay(_selectedDay, selectedDay)) {
-  //     setState(() {
-  //       _selectedDay = selectedDay;
-  //       _focusedDay = focusedDay;
-  //       _rangeStart = null; // Important to clean those
-  //       _rangeEnd = null;
-  //       _rangeSelectionMode = RangeSelectionMode.toggledOff;
-  //       _selectedEvents!.value = _getEventsForDay(selectedDay);
-  //     });
-  //   }
-  // }
-
-  // Future<void> _launchInBrowser(String url) async {
-  //   var uri = Uri.parse(url);
-  //   if (!await launchUrl(
-  //     uri,
-  //     mode: LaunchMode.externalApplication,
-  //   )) {
-  //     throw Exception('Could not launch $url');
-  //   }
-  // }
-
   void startTimer(Duration duration) {
     _selectedDay = DateTime.now();
     _timer?.cancel();
@@ -280,6 +263,14 @@ class _EventListPageState extends State<EventListPage> {
       }
 
       getImageByMeetingStatus();
+    });
+  }
+
+  void startAttendeesTimer() {
+    _attendeesTimer?.cancel();
+    _attendeesTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      Navigator.pop(context);
+      _attendeesTimer?.cancel();
     });
   }
 
@@ -792,82 +783,97 @@ class _EventListPageState extends State<EventListPage> {
                                                       var attendees =
                                                           value[index]
                                                               .attendees;
+                                                      startAttendeesTimer();
                                                       showDialog(
                                                         context: context,
                                                         builder: (BuildContext
                                                             contextt) {
-                                                          return AlertDialog(
-                                                            title: const Column(
-                                                              children: [
-                                                                Text(
-                                                                    'Katılımcılar'),
-                                                                Divider()
+                                                          return PopScope(
+                                                            canPop: false,
+                                                            // onPopInvoked:
+                                                            //     (didPop) {
+                                                            //   _attendeesTimer
+                                                            //       ?.cancel();
+                                                            //   Navigator.pop(
+                                                            //       context);
+                                                            // },
+                                                            child: AlertDialog(
+                                                              title:
+                                                                  const Column(
+                                                                children: [
+                                                                  Text(
+                                                                      'Katılımcılar'),
+                                                                  Divider()
+                                                                ],
+                                                              ),
+                                                              content: SizedBox(
+                                                                height: 300,
+                                                                width: MediaQuery.of(
+                                                                            context)
+                                                                        .size
+                                                                        .width *
+                                                                    0.5,
+                                                                child: ListView
+                                                                    .builder(
+                                                                  shrinkWrap:
+                                                                      true,
+                                                                  itemCount: value[
+                                                                          index]
+                                                                      .attendees
+                                                                      ?.length,
+                                                                  itemBuilder:
+                                                                      (context,
+                                                                          indexx) {
+                                                                    var attendee =
+                                                                        attendees![
+                                                                            indexx];
+                                                                    return Column(
+                                                                      children: [
+                                                                        Container(
+                                                                          margin: const EdgeInsets
+                                                                              .only(
+                                                                              left: 16),
+                                                                          child:
+                                                                              Row(
+                                                                            mainAxisAlignment:
+                                                                                MainAxisAlignment.center,
+                                                                            children: [
+                                                                              SizedBox(
+                                                                                width: MediaQuery.of(context).size.width * 0.48,
+                                                                                child: Text(attendee.emailAddress!.name!, overflow: TextOverflow.ellipsis, style: TextStyle(color: mainColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                                                                              ),
+                                                                            ],
+                                                                          ),
+                                                                        ),
+                                                                        const SizedBox(
+                                                                          height:
+                                                                              5,
+                                                                        )
+                                                                      ],
+                                                                    );
+                                                                  },
+                                                                ),
+                                                              ),
+                                                              actions: [
+                                                                ElevatedButton(
+                                                                    style: ButtonStyle(
+                                                                        backgroundColor:
+                                                                            MaterialStatePropertyAll(
+                                                                                mainColor)),
+                                                                    onPressed:
+                                                                        () {
+                                                                      _attendeesTimer
+                                                                          ?.cancel();
+                                                                      Navigator.pop(
+                                                                          context);
+                                                                    },
+                                                                    child: const Text(
+                                                                        "Tamam",
+                                                                        style: TextStyle(
+                                                                            color:
+                                                                                Colors.white)))
                                                               ],
                                                             ),
-                                                            content: SizedBox(
-                                                              height: 300,
-                                                              width: MediaQuery.of(
-                                                                          context)
-                                                                      .size
-                                                                      .width *
-                                                                  0.5,
-                                                              child: ListView
-                                                                  .builder(
-                                                                shrinkWrap:
-                                                                    true,
-                                                                itemCount: value[
-                                                                        index]
-                                                                    .attendees
-                                                                    ?.length,
-                                                                itemBuilder:
-                                                                    (context,
-                                                                        indexx) {
-                                                                  var attendee =
-                                                                      attendees![
-                                                                          indexx];
-                                                                  return Column(
-                                                                    children: [
-                                                                      Container(
-                                                                        margin: const EdgeInsets
-                                                                            .only(
-                                                                            left:
-                                                                                16),
-                                                                        child:
-                                                                            Row(
-                                                                          mainAxisAlignment:
-                                                                              MainAxisAlignment.center,
-                                                                          children: [
-                                                                            SizedBox(
-                                                                              width: MediaQuery.of(context).size.width * 0.48,
-                                                                              child: Text(attendee.emailAddress!.name!, overflow: TextOverflow.ellipsis, style: TextStyle(color: mainColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                                                                            ),
-                                                                          ],
-                                                                        ),
-                                                                      ),
-                                                                      const SizedBox(
-                                                                        height:
-                                                                            5,
-                                                                      )
-                                                                    ],
-                                                                  );
-                                                                },
-                                                              ),
-                                                            ),
-                                                            actions: [
-                                                              ElevatedButton(
-                                                                  style: ButtonStyle(
-                                                                      backgroundColor:
-                                                                          MaterialStatePropertyAll(
-                                                                              mainColor)),
-                                                                  onPressed: () =>
-                                                                      Navigator.pop(
-                                                                          context),
-                                                                  child: const Text(
-                                                                      "Tamam",
-                                                                      style: TextStyle(
-                                                                          color:
-                                                                              Colors.white)))
-                                                            ],
                                                           );
                                                         },
                                                       );

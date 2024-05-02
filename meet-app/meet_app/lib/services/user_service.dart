@@ -7,7 +7,7 @@ import 'package:meet_app/models/response/get_meeting_rooms_response.dart';
 class UserService {
   Future<List<MeetingRooms>> getRooms() async {
     var response = await RequestHelper.sendRequest(
-        "GET", "zeus-api/api/MeetingRoom?Offset=0&Limit=150");
+        "GET", "MeetingRoom?Offset=0&Limit=150");
 
     var list = jsonDecode(response.body);
     var result = List<MeetingRooms>.from(

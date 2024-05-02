@@ -63,7 +63,7 @@ class EventService {
 
   Future<List<Meeting>> getMeetings(GetMeetingsByRoomIdRequest request) async {
     var response = await RequestHelper.sendRequest("GET",
-        "zeus-api/api/MeetingRoom/${request.roomId}/detail?StartDate=${request.startTime!.dateTime.toString()}&EndDate=${request.endTime!.dateTime.toString()}");
+        "MeetingRoom/${request.roomId}/detail?StartDate=${request.startTime!.dateTime.toString()}&EndDate=${request.endTime!.dateTime.toString()}");
 
     var list = jsonDecode(response.body);
     var result =
