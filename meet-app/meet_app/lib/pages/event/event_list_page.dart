@@ -1,5 +1,4 @@
 // ignore_for_file: curly_braces_in_flow_control_structures
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -12,14 +11,18 @@ import 'package:meet_app/models/response/get_meeting_rooms_response.dart';
 import 'package:meet_app/models/response/get_meetings_by_room.dart';
 // import 'package:meet_app/models/response/get_events_response.dart';
 import 'package:meet_app/pages/event/calendar_events_page.dart';
+// import 'package:meet_app/pages/feedback/feedback_page.dart';
 import 'package:meet_app/pages/room/room_select_page.dart';
 import 'package:meet_app/services/event_service.dart';
+import 'package:send_feedback/send_feedback_widget.dart';
 // import 'package:shake/shake.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:table_calendar/table_calendar.dart';
 // import 'package:url_launcher/url_launcher.dart';
 
 class EventListPage extends StatefulWidget {
+  const EventListPage({super.key});
+
   // String roomId = "ee4ee054-b63a-4120-a42c-51740a899281";
   // String roomName = "Toplantı Odası 601";
   // const EventListPage(
@@ -30,10 +33,12 @@ class EventListPage extends StatefulWidget {
 }
 
 class _EventListPageState extends State<EventListPage> {
+  final GlobalKey _alertKey = GlobalKey();
   ValueNotifier<String> timerText = ValueNotifier<String>('00:00:00');
   Timer? _timer;
   Timer? _newMeetingsTimer;
   Timer? _attendeesTimer;
+  Timer? _feedbackTimer;
   MeetingRooms? meetingRoom;
   bool _isLoading = false;
   ValueNotifier<List<Meeting>>? _selectedEvents;
@@ -97,8 +102,9 @@ class _EventListPageState extends State<EventListPage> {
 
       if (_currentMeeting != null) {
         _nextMeeting = null;
-        final duration =
-            _currentMeeting!.end!.dateTime!.difference(DateTime.now());
+        final duration = _currentMeeting!.end!.dateTime!
+            .add(const Duration(hours: 3))
+            .difference(DateTime.now());
 
         if (_meetings!.indexOf(_currentMeeting!) > 0)
           _meetings!.removeRange(0, _meetings!.indexOf(_currentMeeting!) - 1);
@@ -108,8 +114,9 @@ class _EventListPageState extends State<EventListPage> {
         _currentMeeting = null;
         _nextMeeting = findNextMeeting(_selectedEvents!);
         if (_nextMeeting != null) {
-          final duration =
-              _nextMeeting!.start!.dateTime!.difference(DateTime.now());
+          final duration = _nextMeeting!.start!.dateTime!
+              .add(const Duration(hours: 3))
+              .difference(DateTime.now());
 
           if (_meetings!.indexOf(_nextMeeting!) > 1)
             _meetings!.removeRange(0, _meetings!.indexOf(_nextMeeting!) - 1);
@@ -149,8 +156,9 @@ class _EventListPageState extends State<EventListPage> {
 
       if (_currentMeeting != null) {
         _nextMeeting = null;
-        final duration =
-            _currentMeeting!.end!.dateTime!.difference(DateTime.now());
+        final duration = _currentMeeting!.end!.dateTime!
+            .add(const Duration(hours: 3))
+            .difference(DateTime.now());
 
         if (_meetings!.indexOf(_currentMeeting!) > 0)
           _meetings!.removeRange(0, _meetings!.indexOf(_currentMeeting!) - 1);
@@ -160,8 +168,9 @@ class _EventListPageState extends State<EventListPage> {
         _currentMeeting = null;
         _nextMeeting = findNextMeeting(_selectedEvents!);
         if (_nextMeeting != null) {
-          final duration =
-              _nextMeeting!.start!.dateTime!.difference(DateTime.now());
+          final duration = _nextMeeting!.start!.dateTime!
+              .add(const Duration(hours: 3))
+              .difference(DateTime.now());
 
           if (duration.inSeconds <= 15 * 60 && _nextMeeting != null) //15dk
           {
@@ -274,6 +283,16 @@ class _EventListPageState extends State<EventListPage> {
     });
   }
 
+  void startFeedbackTimer() {
+    _feedbackTimer?.cancel();
+    _feedbackTimer = Timer.periodic(const Duration(seconds: 60), (timer) {
+      if (_alertKey.currentContext != null) {
+        Navigator.pop(context);
+        _feedbackTimer?.cancel();
+      }
+    });
+  }
+
   void checkNewMeetings() {
     _newMeetingsTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _timer?.cancel();
@@ -347,6 +366,26 @@ class _EventListPageState extends State<EventListPage> {
               ),
             ),
           ),
+          // Container(
+          //   margin: const EdgeInsets.only(right: 15),
+          //   child: GestureDetector(
+          //       onTap: () {
+          //         // _timer?.cancel();
+          //         // _newMeetingsTimer?.cancel();
+          //         showDialog(
+          //           context: context,
+          //           builder: (BuildContext context) =>
+          //               const Dialog(child: FeedbackPage()),
+          //         );
+          //         startFeedbackTimer();
+
+          //         // Navigator.push(
+          //         //     context,
+          //         //     MaterialPageRoute(
+          //         //         builder: (context) => const FeedbackPage()));
+          //       },
+          //       child: const Icon(FontAwesomeIcons.comments)),
+          // ),
           Container(
             alignment: Alignment.center,
             margin: const EdgeInsets.only(right: 10),
@@ -621,323 +660,406 @@ class _EventListPageState extends State<EventListPage> {
                 ),
           _selectedEvents == null
               ? Container()
-              : Column(
-                  children: [
-                    Container(
-                      width: MediaQuery.of(context).size.width * 0.4,
-                      height: 30,
-                      color: Colors.grey.withOpacity(0.5),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 2, left: 15),
-                        child: Text(
-                          'Bugün',
-                          // textAlign: TextAlign.justify,
-                          // formatDateForCreateMeet(_selectedDay!),
-                          style: TextStyle(color: mainColor, fontSize: 20),
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Container(
+                        width: MediaQuery.of(context).size.width * 0.4,
+                        height: 30,
+                        color: Colors.grey.withOpacity(0.5),
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 2, left: 15),
+                          child: Text(
+                            'Bugün',
+                            // textAlign: TextAlign.justify,
+                            // formatDateForCreateMeet(_selectedDay!),
+                            style: TextStyle(color: mainColor, fontSize: 20),
+                          ),
                         ),
                       ),
-                    ),
-                    Container(
-                      height: MediaQuery.of(context).size.height * 0.8,
-                      width: MediaQuery.of(context).size.width * 0.4,
-                      child: ValueListenableBuilder<List<Meeting>>(
-                        valueListenable: _selectedEvents!,
-                        builder: (context, value, _) {
-                          return ListView.builder(
-                            shrinkWrap: false,
-                            itemCount: value.length,
-                            itemBuilder: (context, index) {
-                              return ListTile(
-                                contentPadding: const EdgeInsets.all(0),
-                                minVerticalPadding: 0,
-                                subtitle: Container(
-                                  width:
-                                      MediaQuery.of(context).size.width * 0.4,
-                                  child: SingleChildScrollView(
-                                    child: Column(
-                                      children: [
-                                        const SizedBox(
-                                          height: 10,
-                                        ),
-                                        Container(
-                                          margin:
-                                              const EdgeInsets.only(left: 30),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                  "${formatDateForScheduleList(value[index].start!.dateTime!)} ",
-                                                  style: const TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 22)),
-                                              const Icon(
-                                                Icons.arrow_forward_rounded,
-                                                color: Colors.black,
-                                                size: 16,
-                                              ),
-                                              Text(
-                                                  " ${formatDateForScheduleList(value[index].end!.dateTime!)}",
-                                                  style: const TextStyle(
-                                                      color: Colors.black,
-                                                      fontSize: 22)),
-                                            ],
+                      Container(
+                        height: MediaQuery.of(context).size.height * 0.8,
+                        width: MediaQuery.of(context).size.width * 0.4,
+                        child: ValueListenableBuilder<List<Meeting>>(
+                          valueListenable: _selectedEvents!,
+                          builder: (context, value, _) {
+                            return ListView.builder(
+                              shrinkWrap: false,
+                              itemCount: value.length,
+                              itemBuilder: (context, index) {
+                                return ListTile(
+                                  contentPadding: const EdgeInsets.all(0),
+                                  minVerticalPadding: 0,
+                                  subtitle: Container(
+                                    width:
+                                        MediaQuery.of(context).size.width * 0.4,
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        children: [
+                                          const SizedBox(
+                                            height: 10,
                                           ),
-                                        ),
-                                        Container(
-                                          width: MediaQuery.of(context)
-                                                  .size
-                                                  .width *
-                                              0.4,
-                                          // margin:
-                                          //     const EdgeInsets.only(left: 22),
-                                          child: Row(
-                                            // mainAxisAlignment:
-                                            //     MainAxisAlignment.start,
-                                            children: [
-                                              Expanded(
-                                                flex: 4,
-                                                child: Row(
-                                                  children: [
-                                                    value[index] == meeting
-                                                        ? Row(
-                                                            children: [
-                                                              FaIcon(
-                                                                FontAwesomeIcons
-                                                                    .play,
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(left: 30),
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                    "${formatDateForScheduleList(value[index].start!.dateTime!)} ",
+                                                    style: const TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 22)),
+                                                const Icon(
+                                                  Icons.arrow_forward_rounded,
+                                                  color: Colors.black,
+                                                  size: 16,
+                                                ),
+                                                Text(
+                                                    " ${formatDateForScheduleList(value[index].end!.dateTime!)}",
+                                                    style: const TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 22)),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            width: MediaQuery.of(context)
+                                                    .size
+                                                    .width *
+                                                0.4,
+                                            // margin:
+                                            //     const EdgeInsets.only(left: 22),
+                                            child: Row(
+                                              // mainAxisAlignment:
+                                              //     MainAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  flex: 4,
+                                                  child: Row(
+                                                    children: [
+                                                      value[index] == meeting
+                                                          ? Row(
+                                                              children: [
+                                                                FaIcon(
+                                                                  FontAwesomeIcons
+                                                                      .play,
+                                                                  color: value[
+                                                                              index] ==
+                                                                          meeting
+                                                                      ? subjectColor
+                                                                      : Colors
+                                                                          .black,
+                                                                  size: 35,
+                                                                ),
+                                                                const SizedBox(
+                                                                  width: 5,
+                                                                )
+                                                              ],
+                                                            )
+                                                          : const SizedBox(
+                                                              width: 32,
+                                                            ),
+                                                      Container(
+                                                        width: MediaQuery.of(
+                                                                    context)
+                                                                .size
+                                                                .width *
+                                                            0.2,
+                                                        child: Text(
+                                                            "${value[index].subject} ",
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: TextStyle(
                                                                 color: value[
                                                                             index] ==
                                                                         meeting
                                                                     ? subjectColor
                                                                     : Colors
                                                                         .black,
-                                                                size: 35,
-                                                              ),
-                                                              const SizedBox(
-                                                                width: 5,
-                                                              )
-                                                            ],
-                                                          )
-                                                        : const SizedBox(
-                                                            width: 32,
-                                                          ),
-                                                    Container(
-                                                      width:
-                                                          MediaQuery.of(context)
-                                                                  .size
-                                                                  .width *
-                                                              0.2,
-                                                      child: Text(
-                                                          "${value[index].subject} ",
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style: TextStyle(
-                                                              color: value[
-                                                                          index] ==
-                                                                      meeting
-                                                                  ? subjectColor
-                                                                  : Colors
-                                                                      .black,
-                                                              fontSize: 26,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold)),
-                                                    ),
-                                                  ],
+                                                                fontSize: 26,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold)),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
-                                              ),
-                                              // Expanded(
-                                              //   flex: 1,
-                                              //   child: Container(
-                                              //     alignment: Alignment.center,
-                                              //     // width: MediaQuery.of(context)
-                                              //     //         .size
-                                              //     //         .width *
-                                              //     //     0.2,
-                                              //     child: Text(
-                                              //         value[index] ==
-                                              //                 findCurrentMeeting(
-                                              //                     _selectedEvents!)
-                                              //             ? "LIVE "
-                                              //             : value[index] ==
-                                              //                     findNextMeeting(
-                                              //                         _selectedEvents!)
-                                              //                 ? "NEXT"
-                                              //                 : "",
-                                              //         overflow:
-                                              //             TextOverflow.ellipsis,
-                                              //         style: const TextStyle(
-                                              //             color: Colors.red,
-                                              //             fontSize: 20,
-                                              //             fontWeight:
-                                              //                 FontWeight.bold)),
-                                              //   ),
-                                              // ),
-                                              Container(
-                                                margin: const EdgeInsets.only(
-                                                    right: 9),
-                                                child: ElevatedButton(
-                                                    style: ButtonStyle(
-                                                        backgroundColor:
-                                                            MaterialStatePropertyAll(
-                                                                mainColor)),
-                                                    onPressed: () {
-                                                      var attendees =
-                                                          value[index]
-                                                              .attendees;
-                                                      startAttendeesTimer();
-                                                      showDialog(
-                                                        context: context,
-                                                        builder: (BuildContext
-                                                            contextt) {
-                                                          return PopScope(
-                                                            canPop: false,
-                                                            // onPopInvoked:
-                                                            //     (didPop) {
-                                                            //   _attendeesTimer
-                                                            //       ?.cancel();
-                                                            //   Navigator.pop(
-                                                            //       context);
-                                                            // },
-                                                            child: AlertDialog(
-                                                              title:
-                                                                  const Column(
-                                                                children: [
-                                                                  Text(
-                                                                      'Katılımcılar'),
-                                                                  Divider()
+                                                // Expanded(
+                                                //   flex: 1,
+                                                //   child: Container(
+                                                //     alignment: Alignment.center,
+                                                //     // width: MediaQuery.of(context)
+                                                //     //         .size
+                                                //     //         .width *
+                                                //     //     0.2,
+                                                //     child: Text(
+                                                //         value[index] ==
+                                                //                 findCurrentMeeting(
+                                                //                     _selectedEvents!)
+                                                //             ? "LIVE "
+                                                //             : value[index] ==
+                                                //                     findNextMeeting(
+                                                //                         _selectedEvents!)
+                                                //                 ? "NEXT"
+                                                //                 : "",
+                                                //         overflow:
+                                                //             TextOverflow.ellipsis,
+                                                //         style: const TextStyle(
+                                                //             color: Colors.red,
+                                                //             fontSize: 20,
+                                                //             fontWeight:
+                                                //                 FontWeight.bold)),
+                                                //   ),
+                                                // ),
+                                                Container(
+                                                  margin: const EdgeInsets.only(
+                                                      right: 9),
+                                                  child: ElevatedButton(
+                                                      style: ButtonStyle(
+                                                          backgroundColor:
+                                                              MaterialStatePropertyAll(
+                                                                  mainColor)),
+                                                      onPressed: () {
+                                                        var attendees =
+                                                            value[index]
+                                                                .attendees;
+                                                        startAttendeesTimer();
+                                                        showDialog(
+                                                          context: context,
+                                                          builder: (BuildContext
+                                                              contextt) {
+                                                            return PopScope(
+                                                              canPop: false,
+                                                              // onPopInvoked:
+                                                              //     (didPop) {
+                                                              //   _attendeesTimer
+                                                              //       ?.cancel();
+                                                              //   Navigator.pop(
+                                                              //       context);
+                                                              // },
+                                                              child:
+                                                                  AlertDialog(
+                                                                title:
+                                                                    const Column(
+                                                                  children: [
+                                                                    Text(
+                                                                        'Katılımcılar'),
+                                                                    Divider()
+                                                                  ],
+                                                                ),
+                                                                content:
+                                                                    SizedBox(
+                                                                  height: 300,
+                                                                  width: MediaQuery.of(
+                                                                              context)
+                                                                          .size
+                                                                          .width *
+                                                                      0.5,
+                                                                  child: ListView
+                                                                      .builder(
+                                                                    shrinkWrap:
+                                                                        true,
+                                                                    itemCount: value[
+                                                                            index]
+                                                                        .attendees
+                                                                        ?.length,
+                                                                    itemBuilder:
+                                                                        (context,
+                                                                            indexx) {
+                                                                      var attendee =
+                                                                          attendees![
+                                                                              indexx];
+                                                                      return Column(
+                                                                        children: [
+                                                                          Container(
+                                                                            margin:
+                                                                                const EdgeInsets.only(left: 16),
+                                                                            child:
+                                                                                Row(
+                                                                              mainAxisAlignment: MainAxisAlignment.center,
+                                                                              children: [
+                                                                                SizedBox(
+                                                                                  width: MediaQuery.of(context).size.width * 0.48,
+                                                                                  child: Text(attendee.emailAddress!.name!, overflow: TextOverflow.ellipsis, style: TextStyle(color: mainColor, fontSize: 18, fontWeight: FontWeight.bold)),
+                                                                                ),
+                                                                              ],
+                                                                            ),
+                                                                          ),
+                                                                          const SizedBox(
+                                                                            height:
+                                                                                5,
+                                                                          )
+                                                                        ],
+                                                                      );
+                                                                    },
+                                                                  ),
+                                                                ),
+                                                                actions: [
+                                                                  ElevatedButton(
+                                                                      style: ButtonStyle(
+                                                                          backgroundColor: MaterialStatePropertyAll(
+                                                                              mainColor)),
+                                                                      onPressed:
+                                                                          () {
+                                                                        _attendeesTimer
+                                                                            ?.cancel();
+                                                                        Navigator.pop(
+                                                                            context);
+                                                                      },
+                                                                      child: const Text(
+                                                                          "Tamam",
+                                                                          style:
+                                                                              TextStyle(color: Colors.white)))
                                                                 ],
                                                               ),
-                                                              content: SizedBox(
-                                                                height: 300,
-                                                                width: MediaQuery.of(
-                                                                            context)
-                                                                        .size
-                                                                        .width *
-                                                                    0.5,
-                                                                child: ListView
-                                                                    .builder(
-                                                                  shrinkWrap:
-                                                                      true,
-                                                                  itemCount: value[
-                                                                          index]
-                                                                      .attendees
-                                                                      ?.length,
-                                                                  itemBuilder:
-                                                                      (context,
-                                                                          indexx) {
-                                                                    var attendee =
-                                                                        attendees![
-                                                                            indexx];
-                                                                    return Column(
-                                                                      children: [
-                                                                        Container(
-                                                                          margin: const EdgeInsets
-                                                                              .only(
-                                                                              left: 16),
-                                                                          child:
-                                                                              Row(
-                                                                            mainAxisAlignment:
-                                                                                MainAxisAlignment.center,
-                                                                            children: [
-                                                                              SizedBox(
-                                                                                width: MediaQuery.of(context).size.width * 0.48,
-                                                                                child: Text(attendee.emailAddress!.name!, overflow: TextOverflow.ellipsis, style: TextStyle(color: mainColor, fontSize: 18, fontWeight: FontWeight.bold)),
-                                                                              ),
-                                                                            ],
-                                                                          ),
-                                                                        ),
-                                                                        const SizedBox(
-                                                                          height:
-                                                                              5,
-                                                                        )
-                                                                      ],
-                                                                    );
-                                                                  },
+                                                            );
+                                                          },
+                                                        );
+                                                      },
+                                                      child: Row(
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
+                                                        children: [
+                                                          value[index].attendees ==
+                                                                  null
+                                                              ? Container()
+                                                              : Text(
+                                                                  "+ ${value[index].attendees!.length} ",
+                                                                  style: const TextStyle(
+                                                                      fontSize:
+                                                                          15,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      color: Colors
+                                                                          .white),
                                                                 ),
-                                                              ),
-                                                              actions: [
-                                                                ElevatedButton(
-                                                                    style: ButtonStyle(
-                                                                        backgroundColor:
-                                                                            MaterialStatePropertyAll(
-                                                                                mainColor)),
-                                                                    onPressed:
-                                                                        () {
-                                                                      _attendeesTimer
-                                                                          ?.cancel();
-                                                                      Navigator.pop(
-                                                                          context);
-                                                                    },
-                                                                    child: const Text(
-                                                                        "Tamam",
-                                                                        style: TextStyle(
-                                                                            color:
-                                                                                Colors.white)))
-                                                              ],
-                                                            ),
-                                                          );
-                                                        },
-                                                      );
-                                                    },
-                                                    child: Row(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        value[index].attendees ==
-                                                                null
-                                                            ? Container()
-                                                            : Text(
-                                                                "+ ${value[index].attendees!.length} ",
-                                                                style: const TextStyle(
-                                                                    fontSize:
-                                                                        15,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    color: Colors
-                                                                        .white),
-                                                              ),
-                                                        const Icon(
-                                                          Icons.person_rounded,
-                                                          color: Colors.white,
-                                                        )
-                                                      ],
-                                                    )),
-                                              )
-                                            ],
+                                                          const Icon(
+                                                            Icons
+                                                                .person_rounded,
+                                                            color: Colors.white,
+                                                          )
+                                                        ],
+                                                      )),
+                                                )
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        Container(
-                                          margin:
-                                              const EdgeInsets.only(left: 33),
-                                          child: Row(
-                                            children: [
-                                              Text(
-                                                  "${value[index].organizer!.emailAddress!.name} ",
-                                                  style: const TextStyle(
-                                                      color: Color.fromARGB(
-                                                          255, 116, 115, 115),
-                                                      fontSize: 20,
-                                                      fontWeight:
-                                                          FontWeight.bold)),
-                                            ],
+                                          Container(
+                                            margin:
+                                                const EdgeInsets.only(left: 33),
+                                            child: Row(
+                                              children: [
+                                                Text(
+                                                    "${value[index].organizer!.emailAddress!.name} ",
+                                                    style: const TextStyle(
+                                                        color: Color.fromARGB(
+                                                            255, 116, 115, 115),
+                                                        fontSize: 20,
+                                                        fontWeight:
+                                                            FontWeight.bold)),
+                                              ],
+                                            ),
                                           ),
-                                        ),
-                                        const Divider(
-                                          thickness: 0,
-                                          height: 0,
-                                        ),
-                                      ],
+                                          const Divider(
+                                            thickness: 0,
+                                            height: 0,
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      Column(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              startFeedbackTimer();
+                              showDialog(
+                                barrierDismissible: false,
+                                context: context,
+                                builder: (BuildContext context) => Dialog(
+                                    key: _alertKey,
+                                    child: const SendFeedbackWidget(
+                                      featureName: "meetAppTest",
+                                      tenantCode: "beymen",
+                                      requestType: "post",
+                                      url: "http://gateway-it.api.beymen.com/zeus-gateway/gw/Feedback",
+                                    )),
                               );
                             },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                            child: Container(
+                              // height: 200,
+                              padding: const EdgeInsets.all(15),
+                              width: MediaQuery.of(context).size.width * 0.4,
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        height: 61,
+                                        width: 61,
+                                        decoration: BoxDecoration(
+                                            color: Colors.grey.withOpacity(0.5),
+                                            borderRadius:
+                                                BorderRadius.circular(20)),
+                                        child: const Icon(
+                                          Icons.feedback_outlined,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(
+                                        width: 20,
+                                      ),
+                                      const Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "Uygulamayı değerlendirmek için tıklayınız",
+                                                textAlign: TextAlign.left,
+                                                style: TextStyle(
+                                                    fontSize: 18,
+                                                    color: Colors.black),
+                                              ),
+                                            ],
+                                          ),
+                                          // Text(
+                                          //   "Uygulamayı beğeniyor musun?",
+                                          //   style: TextStyle(
+                                          //       fontSize: 18,
+                                          //       color: Color.fromARGB(
+                                          //           255, 116, 115, 115)),
+                                          // )
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const Icon(
+                                    Icons.arrow_forward,
+                                    color: Colors.black,
+                                  )
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
                 ),
         ],
       ),

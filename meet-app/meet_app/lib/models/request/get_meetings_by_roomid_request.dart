@@ -5,5 +5,6 @@ class GetMeetingsByRoomIdRequest {
   Time? startTime;
   Time? endTime;
 
-  GetMeetingsByRoomIdRequest({required this.roomId, this.startTime, this.endTime});
+  GetMeetingsByRoomIdRequest(
+      {required this.roomId, this.startTime, this.endTime});
 }

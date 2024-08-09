@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:meet_app/helpers/request_helper.dart';
 // import 'package:meet_app/models/request/create_meet_request.dart';
 import 'package:meet_app/models/request/get_meetings_by_roomid_request.dart';
+import 'package:meet_app/models/request/send_feedback_request.dart';
 // import 'package:meet_app/models/request/get_schedule_by_room_request.dart';
 // import 'package:meet_app/models/response/get_events_response.dart';
 import 'package:meet_app/models/response/get_meetings_by_room.dart';
@@ -70,5 +71,16 @@ class EventService {
         List<Meeting>.from(list["data"].map((x) => Meeting.fromJson(x)));
 
     return result;
+  }
+
+  Future<bool> sendFeedback(SendFeedbackRequest request) async {
+    var response = await RequestHelper.sendRequest("POST", "Feedback",
+        body: request.toJson());
+
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }

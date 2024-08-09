@@ -19,6 +19,16 @@ dependencies:
   # shake: ^2.2.0
   dropdown_search: ^5.0.6
   font_awesome_flutter: ^10.7.0
+  # send_feedback:
+  #   path: ../../../send_feedback
+  # send_feedback:
+  #   git:
+  #     url: https://github.com/mirackilic/send_feedback
+  send_feedback:
+    git:
+      url: https://bitbucket.org/beymen/bg.omni.store.app/src/package/bg_omni_store_app/packages/send_feedback
+      ref: package
+
 
 dev_dependencies:
   flutter_test:
